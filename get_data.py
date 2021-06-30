@@ -22,18 +22,9 @@ coins = [
 coins_df = pd.DataFrame(coins)
 coins_df.columns = ['Symbol']
 
-coins_df['Type'][coins_df['Symbol'].isin(['tether','usd-coin'
+coins_df['Type'] = np.where(coins_df['Symbol'].isin(['tether','usd-coin'
     ,'binance-usd','true-usd','paxos-standard'
-    ,'husd','gemini-dollar'])]= 'Fiat collateralized'
-
-coins_df['Type'][coins_df['Symbol'].isin(['terra-usd','neutrino-usd'
-    ,'fei-protocol','alchemix-usd','frax'])]= 'Crypto (under)collateralized'
-
-coins_df['Type'][coins_df['Symbol'].isin(['dai','liquity-usd','neutrino-usd'
-    ,'fei-protocol','alchemix-usd','frax'])]= 'Crypto (over)collateralized'
-
-
-
+    ,'husd','gemini-dollar']),'Fiat collateralized', 'Algo-stable')
 cg = CoinGeckoAPI()
 
 x = cg.get_coin_market_chart_range_by_id(id='liquity-usd',vs_currency='usd',from_timestamp='1624968752',to_timestamp='1625055153')
