@@ -106,7 +106,7 @@ ax.annotate(
     horizontalalignment='center',  # Center horizontally
     verticalalignment='center')
 
-# plt.show()
+plt.show()
 plt.savefig('plot.jpeg')
 
 
@@ -129,6 +129,10 @@ for i in range(0,len(coins)):
     time.sleep(3) # to not stress the API
 
 df.columns = ['timestamp', 'mcap', 'symbol']
+df.to_csv('raw_data_pull_yr.csv') # Checkpoint. So no need to hit the API again and again while iterating on data
+
+df = pd.read_csv('raw_data_pull_yr.csv')[['timestamp', 'mcap', 'symbol']]
+
 
 df['date'] = pd.to_datetime(df['timestamp'],unit='ms')
 df = df[df['symbol'].isin(['tether','usd-coin','binance-usd','dai','terrausd'])] # Filter to top 5 by mcap
@@ -142,16 +146,6 @@ df = df.replace(to_replace ="terrausd",value ="UST")
 
 df = df.pivot(index = 'date', columns = 'symbol', values = 'mcap')
 
-df.plot()
-plt.xlabel("")
-plt.ylabel("Market Capitalization (billions $)")
-plt.legend(*(
-    [ x[i] for i in [3,2,0,1,4] ]
-    for x in plt.gca().get_legend_handles_labels()
-), handletextpad=0.75, loc='best')
-plt.legend(title = 'Stablecoin', fontsize = 8)
-plt.show()
-
 
 df.plot()
 plt.style.use('seaborn')
@@ -163,4 +157,5 @@ plt.legend(*(
     for x in plt.gca().get_legend_handles_labels()
 ), handletextpad=0.75, loc='best')
 # plt.legend(title = 'Stablecoin', fontsize = 8)
+plt.show()
 plt.savefig('plot_mcap.jpeg')
