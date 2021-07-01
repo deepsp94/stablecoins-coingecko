@@ -57,7 +57,7 @@ df = df.merge(coins_df, left_on = ['symbol'], right_on = ['symbol'], how = 'inne
 
 df['time_rank'] = df.groupby(['week', 'symbol'])['timestamp'].rank(method = 'first', ascending = False)
 df = df[df['time_rank'] == 1]
-
+df.to_csv('final_data.csv')
 
 
 df_grp = df.groupby(['type', 'week'], as_index = False)['mcap'].sum()
@@ -70,7 +70,31 @@ df_grp = df_grp.pivot(index = 'week_x', columns = 'Type', values = 'YTD growth')
 
 ax = df_grp.plot()
 plt.title("YTD market capitalization growth %")
-plt.xlabel('Weeks since 2021-01-01')
+plt.xlabel('# Weeks since 2021-01-01')
 plt.ylabel('Market cap growth')
 ax.yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1, decimals=None, symbol='%', is_latex=False))
-plt.savefig('plot.pdf')
+plt.legend(loc='lower right', prop={'size': 10})
+
+ax.annotate(
+    text='Crypto market crash on 19th May',
+    xy=(19,4.113689),
+    xycoords='data',
+    fontsize=10,
+    xytext=(-125, 0),
+    textcoords='offset points',
+    arrowprops=dict(arrowstyle='->', color='black'),  # Use color black
+    horizontalalignment='center',  # Center horizontally
+    verticalalignment='center')
+
+ax.annotate(
+    text='Growth trends\n decouple post Jan',
+    xy=(5,0.246803),
+    xycoords='data',
+    fontsize=10,
+    xytext=(85, 0),
+    textcoords='offset points',
+    arrowprops=dict(arrowstyle='->', color='black'),  # Use color black
+    horizontalalignment='center',  # Center horizontally
+    verticalalignment='center')
+
+plt.savefig('plot.jpeg')
