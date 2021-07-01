@@ -5,9 +5,10 @@ import time
 from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import seaborn
 cg = CoinGeckoAPI()
 
-# List of stables to analyse
+# List of stables to analyse - these are the top 15 stables by market cap on 1st July 2021. Source: coingecko
 coins = [
     'tether'
     ,'usd-coin'
@@ -27,6 +28,9 @@ coins = [
 ]
 coins_df = pd.DataFrame(coins)
 coins_df.columns = ['symbol']
+
+
+################################################# Algo vs Fiat chart ################################################# 
 
 # Classification
 coins_df['type'] = np.where(coins_df['symbol'].isin(['tether','usd-coin'
@@ -73,6 +77,7 @@ df_grp = df_grp.pivot(index = 'week_x', columns = 'Type', values = 'YTD growth')
 
 # Plot
 ax = df_grp.plot()
+plt.style.use('seaborn')
 plt.title("YTD market capitalization growth %")
 plt.xlabel('# Weeks since 2021-01-01')
 plt.ylabel('Market cap growth')
@@ -101,4 +106,61 @@ ax.annotate(
     horizontalalignment='center',  # Center horizontally
     verticalalignment='center')
 
+# plt.show()
 plt.savefig('plot.jpeg')
+
+
+
+################################################# Market cap chart #################################################
+
+# df = pd.read_csv('raw_data_pull.csv')[['timestamp', 'mcap', 'symbol']] # read YTD data
+
+coins = ['tether','usd-coin','binance-usd','dai','terrausd']
+
+df = pd.DataFrame()
+for i in range(0,len(coins)):
+    coin = coins[i]
+    x = cg.get_coin_market_chart_range_by_id(id=coin,vs_currency='usd',from_timestamp='1593541800',to_timestamp='1625072479') # last 1 year
+    xmcap = x['market_caps']
+    xdf = pd.DataFrame(xmcap)
+    xdf['symbol'] = coins[i]
+    df = df.append(xdf)
+    print(f'Data pulled for {coins[i]}, waiting for 3 secs')
+    time.sleep(3) # to not stress the API
+
+df.columns = ['timestamp', 'mcap', 'symbol']
+
+df['date'] = pd.to_datetime(df['timestamp'],unit='ms')
+df = df[df['symbol'].isin(['tether','usd-coin','binance-usd','dai','terrausd'])] # Filter to top 5 by mcap
+df['mcap'] = df['mcap']/1000000000
+
+df = df.replace(to_replace ="tether",value ="USDT")
+df = df.replace(to_replace ="usd-coin",value ="USDC")
+df = df.replace(to_replace ="binance-usd",value ="BUSD")
+df = df.replace(to_replace ="dai",value ="Dai")
+df = df.replace(to_replace ="terrausd",value ="UST")
+
+df = df.pivot(index = 'date', columns = 'symbol', values = 'mcap')
+
+df.plot()
+plt.xlabel("")
+plt.ylabel("Market Capitalization (billions $)")
+plt.legend(*(
+    [ x[i] for i in [3,2,0,1,4] ]
+    for x in plt.gca().get_legend_handles_labels()
+), handletextpad=0.75, loc='best')
+plt.legend(title = 'Stablecoin', fontsize = 8)
+plt.show()
+
+
+df.plot()
+plt.style.use('seaborn')
+plt.title("Market capitalization of top 5 stables")
+plt.xlabel("")
+plt.ylabel("Market Capitalization ($ billions)")
+plt.legend(*(
+    [ x[i] for i in [3,2,0,1,4] ]
+    for x in plt.gca().get_legend_handles_labels()
+), handletextpad=0.75, loc='best')
+# plt.legend(title = 'Stablecoin', fontsize = 8)
+plt.savefig('plot_mcap.jpeg')
