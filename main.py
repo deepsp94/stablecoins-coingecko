@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 cg = CoinGeckoAPI()
 
+# List of stables to analyse
 coins = [
     'tether'
     ,'usd-coin'
@@ -27,47 +28,50 @@ coins = [
 coins_df = pd.DataFrame(coins)
 coins_df.columns = ['symbol']
 
+# Classification
 coins_df['type'] = np.where(coins_df['symbol'].isin(['tether','usd-coin'
     ,'binance-usd','true-usd','paxos-standard'
-    ,'husd','gemini-dollar']),'Fiat collateralized', 'Algo-stable')
+    ,'husd','gemini-dollar']),'Fiat collateralized', 'Algo-stables')
 
-
-# x = cg.get_coin_market_chart_range_by_id(id='ust',vs_currency='usd',from_timestamp='1624968752',to_timestamp='1625055153')
 
 df = pd.DataFrame()
 for i in range(0,len(coins)):
     coin = coins[i]
-    x = cg.get_coin_market_chart_range_by_id(id=coin,vs_currency='usd',from_timestamp='1609459200',to_timestamp='1625072479')
+    x = cg.get_coin_market_chart_range_by_id(id=coin,vs_currency='usd',from_timestamp='1609459200',to_timestamp='1625072479') # from 2021-01-01 to now
     xmcap = x['market_caps']
     xdf = pd.DataFrame(xmcap)
     xdf['symbol'] = coins[i]
     df = df.append(xdf)
     print(f'Data pulled for {coins[i]}, waiting for 3 secs')
-    time.sleep(3)
+    time.sleep(3) # to not stress the API
 
 df.columns = ['timestamp', 'mcap', 'symbol']
-df.to_csv('raw_data_pull.csv')
+df.to_csv('raw_data_pull.csv') # Checkpoint. So no need to hit the API again and again while iterating on data
 
 df = pd.read_csv('raw_data_pull.csv')[['timestamp', 'mcap', 'symbol']]
 
 df['date'] = pd.to_datetime(df['timestamp'],unit='ms')
 df['week'] = df['date'].dt.week
-df = df[df['week'] < 53]
+df = df[df['week'] < 53] # Removing a timestamp from Dec 2020
 df = df.merge(coins_df, left_on = ['symbol'], right_on = ['symbol'], how = 'inner')
 
+
+# Getting the last mcap value for a week. Kind of like weekly close on a candle
 df['time_rank'] = df.groupby(['week', 'symbol'])['timestamp'].rank(method = 'first', ascending = False)
 df = df[df['time_rank'] == 1]
 df.to_csv('final_data.csv')
 
 
-df_grp = df.groupby(['type', 'week'], as_index = False)['mcap'].sum()
-df_grp_1 = df_grp[df_grp['week'] == 1]
+df_grp = df.groupby(['type', 'week'], as_index = False)['mcap'].sum() # Aggregate to "type" level
+df_grp_1 = df_grp[df_grp['week'] == 1] # Every week will be compared to the first week of the year
 df_grp = df_grp.merge(df_grp_1, left_on = ['type'], right_on = ['type'], how='inner')
 
-df_grp['YTD growth'] = ((df_grp['mcap_x'] - df_grp['mcap_y'])/df_grp['mcap_y'])
+df_grp['YTD growth'] = ((df_grp['mcap_x'] - df_grp['mcap_y'])/df_grp['mcap_y']) 
 df_grp = df_grp.rename(columns = {'type':'Type'})
 df_grp = df_grp.pivot(index = 'week_x', columns = 'Type', values = 'YTD growth')
 
+
+# Plot
 ax = df_grp.plot()
 plt.title("YTD market capitalization growth %")
 plt.xlabel('# Weeks since 2021-01-01')
