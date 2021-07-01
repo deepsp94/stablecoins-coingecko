@@ -3,7 +3,7 @@ Pulling stablecoins data from coingecko. Insights will be published in an articl
 
 Data source: https://www.coingecko.com/en
 
-main.py is the code used to generate plot.jpeg
+main.py is the code used to generate plot.jpeg and plot_mcap.jpeg
 
 Top 15 stables:
 tether
